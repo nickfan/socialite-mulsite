@@ -1,0 +1,19 @@
+{
+    "name": "socialiteproviders/mulsite",
+    "description": "Mulsite OAuth2 Provider for Laravel Socialite",
+    "license": "MIT",
+    "authors": [{
+        "name": "nickfan",
+        "email": "nickfan81@gmail.com"
+    }],
+    "require": {
+        "php": ">=5.5.0",
+        "illuminate/support": "5.0.x|5.1.x|5.2.x",
+        "socialiteproviders/manager": "~1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "SocialiteProviders\\Mulsite\\": "src/"
+        }
+    }
+}
