@@ -2,6 +2,7 @@
 namespace SocialiteProviders\Mulsite;
 
 use Illuminate\Http\Request;
+use GuzzleHttp\ClientInterface;
 use Laravel\Socialite\Two\AbstractProvider;
 use Laravel\Socialite\Two\ProviderInterface;
 use Laravel\Socialite\Two\User;
@@ -14,6 +15,9 @@ class Provider extends AbstractProvider implements ProviderInterface
      * {@inheritdoc}
      */
     protected $scopes = [];
+
+
+    protected $lastAccessTokenResponse = null;
 
     /**
      * The options.
@@ -80,6 +84,116 @@ class Provider extends AbstractProvider implements ProviderInterface
     protected function getTokenUrl()
     {
         return $this->getOption('endpoint', 'http://mul.axiong.me').$this->getOption('postfixAccessToken', '/oauth/access_token');
+    }
+
+
+    protected function getLastAccessTokenResponse(){
+        return $this->lastAccessTokenResponse;
+    }
+    protected function setLastAccessTokenResponse($response){
+        return $this->lastAccessTokenResponse = $response;
+    }
+    protected function getLastAccessTokenBody(){
+        return !empty($this->lastAccessTokenResponse)?json_decode($this->lastAccessTokenResponse,true):null;
+    }
+
+    /**
+     * Get the access token Body By Code
+     *
+     * @param  string  $code
+     * @return string
+     */
+    public function getAccessTokenBodyByCode($code)
+    {
+        $postKey = (version_compare(ClientInterface::VERSION, '6') === 1) ? 'form_params' : 'body';
+        $response = $this->getHttpClient()->post($this->getTokenUrl(), [
+            'headers' => ['Accept' => 'application/json'],
+            $postKey => $this->getTokenFields($code),
+        ]);
+        return json_decode($this->setLastAccessTokenResponse($response->getBody()), true);
+    }
+
+    /**
+     * Get the access token Body By Refresh Token
+     *
+     * @param  string  $code
+     * @return string
+     */
+    public function getAccessTokenBodyByRefreshToken($refresh_token)
+    {
+        $postKey = (version_compare(ClientInterface::VERSION, '6') === 1) ? 'form_params' : 'body';
+        $response = $this->getHttpClient()->post($this->getTokenUrl(), [
+            'headers' => ['Accept' => 'application/json'],
+            $postKey => $this->getTokenFieldsByRefreshToken($refresh_token),
+        ]);
+        return json_decode($this->setLastAccessTokenResponse($response->getBody()), true);
+    }
+
+    /**
+     * Get the access token Body
+     *
+     * @param  string  $code
+     * @return string
+     */
+    public function getAccessTokenBody()
+    {
+        $lastAccessTokenBody = $this->getLastAccessTokenBody();
+        if(empty($lastAccessTokenBody)){
+            $lastAccessTokenBody = $this->getAccessTokenBodyByCode($this->getCode());
+        }
+        return $lastAccessTokenBody;
+    }
+
+    /**
+     * Get the access token for the given code.
+     *
+     * @param  string  $code
+     * @return string
+     */
+    public function getAccessToken($code)
+    {
+        $postKey = (version_compare(ClientInterface::VERSION, '6') === 1) ? 'form_params' : 'body';
+
+        $response = $this->getHttpClient()->post($this->getTokenUrl(), [
+            'headers' => ['Accept' => 'application/json'],
+            $postKey => $this->getTokenFields($code),
+        ]);
+
+        return $this->parseAccessToken($this->setLastAccessTokenResponse($response->getBody()));
+    }
+
+
+    /**
+     * Get the access token for the given code.
+     *
+     * @param  string  $code
+     * @return string
+     */
+    public function getAccessTokenByRefreshToken($refresh_token)
+    {
+        $postKey = (version_compare(ClientInterface::VERSION, '6') === 1) ? 'form_params' : 'body';
+
+        $response = $this->getHttpClient()->post($this->getTokenUrl(), [
+            'headers' => ['Accept' => 'application/json'],
+            $postKey => $this->getTokenFieldsByRefreshToken($refresh_token),
+        ]);
+
+        return $this->parseAccessToken($this->setLastAccessTokenResponse($response->getBody()));
+    }
+
+    /**
+     * Get the POST fields for the token request.
+     *
+     * @param  string  $code
+     * @return array
+     */
+    protected function getTokenFieldsByRefreshToken($refresh_token)
+    {
+        return [
+            'client_id' => $this->clientId, 'client_secret' => $this->clientSecret,
+            'grant_type' => 'refresh_token',
+            'refresh_token' => $refresh_token, 'redirect_uri' => $this->redirectUrl,
+        ];
     }
 
     /**
