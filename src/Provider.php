@@ -16,9 +16,6 @@ class Provider extends AbstractProvider implements ProviderInterface
      */
     protected $scopes = [];
 
-
-    protected $lastAccessTokenResponse = null;
-
     /**
      * The options.
      *
@@ -86,17 +83,6 @@ class Provider extends AbstractProvider implements ProviderInterface
         return $this->getOption('endpoint', 'http://mul.axiong.me').$this->getOption('postfixAccessToken', '/oauth/access_token');
     }
 
-
-    protected function getLastAccessTokenResponse(){
-        return $this->lastAccessTokenResponse;
-    }
-    protected function setLastAccessTokenResponse($response){
-        return $this->lastAccessTokenResponse = $response;
-    }
-    protected function getLastAccessTokenBody(){
-        return !empty($this->lastAccessTokenResponse)?json_decode($this->lastAccessTokenResponse,true):null;
-    }
-
     /**
      * Get the access token Body By Code
      *
@@ -110,7 +96,7 @@ class Provider extends AbstractProvider implements ProviderInterface
             'headers' => ['Accept' => 'application/json'],
             $postKey => $this->getTokenFields($code),
         ]);
-        return json_decode($this->setLastAccessTokenResponse($response->getBody()), true);
+        return json_decode($response->getBody(), true);
     }
 
     /**
@@ -126,7 +112,7 @@ class Provider extends AbstractProvider implements ProviderInterface
             'headers' => ['Accept' => 'application/json'],
             $postKey => $this->getTokenFieldsByRefreshToken($refresh_token),
         ]);
-        return json_decode($this->setLastAccessTokenResponse($response->getBody()), true);
+        return json_decode($response->getBody(), true);
     }
 
     /**
@@ -137,11 +123,7 @@ class Provider extends AbstractProvider implements ProviderInterface
      */
     public function getAccessTokenBody()
     {
-        $lastAccessTokenBody = $this->getLastAccessTokenBody();
-        if(empty($lastAccessTokenBody)){
-            $lastAccessTokenBody = $this->getAccessTokenBodyByCode($this->getCode());
-        }
-        return $lastAccessTokenBody;
+        return $this->getAccessTokenBodyByCode($this->getCode());
     }
 
     /**
@@ -159,7 +141,7 @@ class Provider extends AbstractProvider implements ProviderInterface
             $postKey => $this->getTokenFields($code),
         ]);
 
-        return $this->parseAccessToken($this->setLastAccessTokenResponse($response->getBody()));
+        return $this->parseAccessToken($response->getBody());
     }
 
 
@@ -178,7 +160,7 @@ class Provider extends AbstractProvider implements ProviderInterface
             $postKey => $this->getTokenFieldsByRefreshToken($refresh_token),
         ]);
 
-        return $this->parseAccessToken($this->setLastAccessTokenResponse($response->getBody()));
+        return $this->parseAccessToken($response->getBody());
     }
 
     /**
